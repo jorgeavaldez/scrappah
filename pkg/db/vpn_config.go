@@ -51,7 +51,7 @@ func (r *Repository) GetVPNConfigs() []VPNConfig {
 		}
 
 		vpnConfigs = append(vpnConfigs, vpnConfig)
-		fmt.Fprintf(os.Stdout, "vpn config: %s\n\t%s", vpnConfig.Name, vpnConfig.ConfigContent)
+		fmt.Fprintf(os.Stdout, "vpn config: %s\n%s", vpnConfig.Name, vpnConfig.ConfigContent)
 	}
 
 	if err := rows.Err(); err != nil {
