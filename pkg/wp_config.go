@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"net/netip"
+
+	"scrappah/pkg/db"
 )
 
 func parseString(section *ini.Section, keyName string) (string, error) {
@@ -405,15 +407,20 @@ func parseRoutinesConfig(routines *[]wireproxy.RoutineSpawner, cfg *ini.File, se
 	return nil
 }
 
+// ValidateVPNConfig validates a VPNConfig by parsing its content with wireproxy
+func ValidateVPNConfig(vpnConfig db.VPNConfig) (*wireproxy.Configuration, error) {
+	return ParseConfig(vpnConfig.ConfigContent)
+}
+
 // ParseConfig takes the path of a configuration file and parses it into Configuration
-func ParseConfig(path string) (*wireproxy.Configuration, error) {
+func ParseConfig(source any) (*wireproxy.Configuration, error) {
 	iniOpt := ini.LoadOptions{
 		Insensitive:            true,
 		AllowShadows:           true,
 		AllowNonUniqueSections: true,
 	}
 
-	cfg, err := ini.LoadSources(iniOpt, path)
+	cfg, err := ini.LoadSources(iniOpt, source)
 	if err != nil {
 		return nil, err
 	}

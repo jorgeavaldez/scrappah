@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	pkg "scrappah/pkg"
 	"scrappah/pkg/db"
 
 	_ "github.com/tursodatabase/go-libsql"
@@ -24,6 +25,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Commands:\n")
 		fmt.Fprintf(os.Stderr, "  list              List all VPN configs\n")
 		fmt.Fprintf(os.Stderr, "  add <file_path>   Add VPN config from file\n")
+		fmt.Fprintf(os.Stderr, "  revalidate        Validate all VPN configs in database\n")
 		os.Exit(1)
 	}
 
@@ -39,6 +41,8 @@ func main() {
 		}
 		filePath := os.Args[2]
 		addVPNConfig(repo, filePath)
+	case "revalidate":
+		revalidateVPNConfigs(repo)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
@@ -74,6 +78,12 @@ func addVPNConfig(repo *db.Repository, filePath string) {
 		ConfigContent: content,
 	}
 
+	_, err = pkg.ValidateVPNConfig(vpnConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config validation failed for %s: %s\n", fileName, err)
+		os.Exit(1)
+	}
+
 	id, err := repo.InsertVPNConfig(vpnConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to insert VPN config: %s\n", err)
@@ -81,4 +91,24 @@ func addVPNConfig(repo *db.Repository, filePath string) {
 	}
 
 	fmt.Printf("Added VPN config '%s' with ID %d\n", fileName, id)
+}
+
+func revalidateVPNConfigs(repo *db.Repository) {
+	vpnConfigs := repo.GetVPNConfigs()
+
+	validCount := 0
+	invalidCount := 0
+
+	for _, vpnConfig := range vpnConfigs {
+		_, err := pkg.ValidateVPNConfig(vpnConfig)
+		if err != nil {
+			fmt.Printf("INVALID: %s (ID: %d) - %s\n", vpnConfig.Name, vpnConfig.ID, err)
+			invalidCount++
+		} else {
+			fmt.Printf("VALID: %s (ID: %d)\n", vpnConfig.Name, vpnConfig.ID)
+			validCount++
+		}
+	}
+
+	fmt.Printf("\nValidation Summary: %d valid, %d invalid configs\n", validCount, invalidCount)
 }
