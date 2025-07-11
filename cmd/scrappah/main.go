@@ -23,4 +23,3 @@ func main() {
 	// TODO: use a reader here from the db
 	conf, err := pkg.ParseConfig("")
 }
-

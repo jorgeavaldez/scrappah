@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 
@@ -27,10 +26,10 @@ type VPNConfig struct {
 	ConfigContent []byte
 }
 
-func GetVPNConfigs(db *sql.DB) []VPNConfig {
-	rows, err := db.Query("SELECT id, name, is_active, config_content FROM vpn_config")
+func (r *Repository) GetVPNConfigs() []VPNConfig {
+	rows, err := r.db.QueryContext(r.ctx, "SELECT id, name, is_active, config_content FROM vpn_config")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to query users %s", err)
+		fmt.Fprintf(os.Stderr, "failed to query vpn configs %s", err)
 		os.Exit(1)
 	}
 
@@ -62,8 +61,8 @@ func GetVPNConfigs(db *sql.DB) []VPNConfig {
 	return vpnConfigs
 }
 
-func InsertVPNConfig(db *sql.DB, vpnConfig VPNConfig) (int, error) {
-	result := db.QueryRow(
+func (r *Repository) InsertVPNConfig(vpnConfig VPNConfig) (int, error) {
+	result := r.db.QueryRowContext(r.ctx,
 		"insert into vpn_config (name, is_active, config_content) values (?, ?, ?) returning id",
 		vpnConfig.Name,
 		vpnConfig.IsActive,
