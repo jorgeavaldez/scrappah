@@ -1,0 +1,7 @@
+/main
+/wireproxy
+*.sw?
+/.idea
+.goreleaser.yml
+*.conf
+*.db
