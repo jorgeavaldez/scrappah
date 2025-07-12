@@ -12,7 +12,7 @@ help:
 	@echo "  build-server - Build main server"
 	@echo "  run-db       - Run database helper (pass args with ARGS=...)"
 	@echo "  run-server   - Run main server"
-	@echo "  test-ip      - Test IP address through proxy"
+	@echo "  test-proxy   - Test IP address through first SOCKS5 proxy (port 8001)"
 	@echo "  test         - Run all tests"
 	@echo "  fmt          - Format Go code"
 	@echo "  vet          - Run go vet"
@@ -35,9 +35,9 @@ run-db: build-db
 run-server: build-server
 	$(BINARY_SERVER)
 
-test-ip: 
-	@echo "Testing IP through proxy..."
-	curl -x http://localhost:8002 https://api.ipify.org
+test-proxy: 
+	@echo "Testing IP through SOCKS5 proxy (port 8001)..."
+	curl --socks5 localhost:8001 https://api.ipify.org
 
 test:
 	go test ./...
