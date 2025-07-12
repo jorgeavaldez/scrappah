@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/pufferffish/wireproxy"
@@ -50,8 +51,20 @@ func (app *App) LoadVPNConfigs() []*wireproxy.Configuration {
 	validCount := 0
 	invalidCount := 0
 
+	startingPort := 8001
+
+	var builder strings.Builder
+
 	validConfigs := make([]*wireproxy.Configuration, 0, len(vpnConfigs))
 	for _, vpnConfig := range vpnConfigs {
+		builder.WriteString(string(vpnConfig.ConfigContent))
+		builder.WriteString(
+			"\n\n[Socks5]\nBindAddress = 0.0.0.0:" + strconv.Itoa(startingPort) + "\n",
+		)
+		vpnConfig.ConfigContent = []byte(builder.String())
+		startingPort++
+		builder.Reset()
+
 		validConfig, err := pkg.ValidateVPNConfig(vpnConfig)
 		if err != nil {
 			fmt.Printf("INVALID: %s (ID: %d) - %s\n", vpnConfig.Name, vpnConfig.ID, err)
@@ -73,31 +86,24 @@ func main() {
 
 	configs := app.LoadVPNConfigs()
 
-	config := configs[0]
-	if config == nil {
-		fmt.Println("No valid configs found")
-		os.Exit(1)
-	}
-
-	// verbose logLevel
-	tun, err := wireproxy.StartWireguard(config.Device, 2)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		os.Exit(1)
-	}
-
-	for _, spawner := range config.Routines {
-		go spawner.SpawnRoutine(tun)
-	}
-
-	tun.StartPingIPs()
-
-	go func() {
-		err := http.ListenAndServe("0.0.0.0:8002", tun)
-		if err != nil {
-			panic(err)
+	for _, config := range configs {
+		if config == nil {
+			fmt.Println("No valid configs found")
+			os.Exit(1)
 		}
-	}()
+
+		tun, err := wireproxy.StartWireguard(config.Device, 1)
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			os.Exit(1)
+		}
+
+		for _, spawner := range config.Routines {
+			go spawner.SpawnRoutine(tun)
+		}
+
+		tun.StartPingIPs()
+	}
 
 	<-app.Ctx.Done()
 }
