@@ -49,20 +49,16 @@ func (app *App) Close() error {
 func (app *App) LoadVPNConfigs(startingPort, count int) []*wireproxy.Configuration {
 	vpnConfigs := app.Repo.GetVPNConfigs()
 
-	// Validation: fail if DB is empty
 	if len(vpnConfigs) == 0 {
 		fmt.Println("Error: Database is empty. Please add VPN configurations before starting.")
 		os.Exit(1)
 	}
 
-	// Validation: fail if DB has fewer configs than requested count
 	if len(vpnConfigs) < count {
-		fmt.Printf("Error: Database contains %d configs but %d were requested. Please add more configurations or reduce count.\n", len(vpnConfigs), count)
-		os.Exit(1)
+		fmt.Printf("Warning: Database contains %d configs but %d were requested. Using all %d available configs.\n", len(vpnConfigs), count, len(vpnConfigs))
+	} else {
+		vpnConfigs = vpnConfigs[:count]
 	}
-
-	// Only process the requested count of configurations
-	vpnConfigs = vpnConfigs[:count]
 
 	validCount := 0
 	invalidCount := 0
@@ -97,7 +93,6 @@ func (app *App) LoadVPNConfigs(startingPort, count int) []*wireproxy.Configurati
 }
 
 func main() {
-	// Parse command line flags
 	startingPort := flag.Int("starting-port", 8001, "Starting port for SOCKS5 proxies")
 	count := flag.Int("count", 5, "Number of VPN configurations to load and create proxies for")
 	flag.Parse()
