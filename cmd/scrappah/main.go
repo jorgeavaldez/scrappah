@@ -21,7 +21,7 @@ type App struct {
 	Repo *db.Repository
 }
 
-func NewApp() *App {
+func NewApp(dbPath string) *App {
 	s := make(chan os.Signal, 1)
 
 	signal.Notify(s, syscall.SIGINT, syscall.SIGQUIT)
@@ -32,8 +32,7 @@ func NewApp() *App {
 		cancel()
 	}()
 
-	dbName := "file:./local.db"
-	repo := db.NewRepository(ctx, dbName)
+	repo := db.NewRepository(ctx, dbPath)
 
 	return &App{
 		Ctx:  ctx,
@@ -95,9 +94,10 @@ func (app *App) LoadVPNConfigs(startingPort, count int) []*wireproxy.Configurati
 func main() {
 	startingPort := flag.Int("starting-port", 8001, "Starting port for SOCKS5 proxies")
 	count := flag.Int("count", 5, "Number of VPN configurations to load and create proxies for")
+	dbPath := flag.String("db", "", "Database file path (default: ./local.db)")
 	flag.Parse()
 
-	app := NewApp()
+	app := NewApp(*dbPath)
 	defer app.Close()
 
 	configs := app.LoadVPNConfigs(*startingPort, *count)
