@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 
 	_ "github.com/tursodatabase/go-libsql"
 )
@@ -14,8 +15,16 @@ type Repository struct {
 	ctx context.Context
 }
 
-func NewRepository(ctx context.Context, dbName string) *Repository {
-	db, err := sql.Open("libsql", dbName)
+func NewRepository(ctx context.Context, dbPath string) *Repository {
+	if dbPath == "" {
+		dbPath = getDefaultDBPath()
+	}
+	
+	if !strings.HasPrefix(dbPath, "file:") {
+		dbPath = "file:" + dbPath
+	}
+	
+	db, err := sql.Open("libsql", dbPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open db %s", err)
 		os.Exit(1)
@@ -24,12 +33,24 @@ func NewRepository(ctx context.Context, dbName string) *Repository {
 	return &Repository{db: db, ctx: ctx}
 }
 
+func getDefaultDBPath() string {
+	return "./local.db"
+}
+
 func (r *Repository) Close() error {
 	return r.db.Close()
 }
 
-func GetDB(dbName string) *sql.DB {
-	db, err := sql.Open("libsql", dbName)
+func GetDB(dbPath string) *sql.DB {
+	if dbPath == "" {
+		dbPath = getDefaultDBPath()
+	}
+	
+	if !strings.HasPrefix(dbPath, "file:") {
+		dbPath = "file:" + dbPath
+	}
+	
+	db, err := sql.Open("libsql", dbPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open db %s", err)
 		os.Exit(1)

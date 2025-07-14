@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -14,14 +15,15 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-	dbName := "file:./local.db"
+	dbPath := flag.String("db", "", "Database file path (default: ./local.db)")
+	flag.Parse()
 
-	repo := db.NewRepository(ctx, dbName)
+	ctx := context.Background()
+	repo := db.NewRepository(ctx, *dbPath)
 	defer repo.Close()
 
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <command> [args...]\n", os.Args[0])
+	if flag.NArg() < 1 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [-db path] <command> [args...]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Commands:\n")
 		fmt.Fprintf(os.Stderr, "  list              List all VPN configs\n")
 		fmt.Fprintf(os.Stderr, "  add <file_path>   Add VPN config from file\n")
@@ -29,17 +31,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	command := os.Args[1]
+	command := flag.Arg(0)
 
 	switch command {
 	case "list":
 		listVPNConfigs(repo)
 	case "add":
-		if len(os.Args) < 3 {
+		if flag.NArg() < 2 {
 			fmt.Fprintf(os.Stderr, "Usage: %s add <file_path>\n", os.Args[0])
 			os.Exit(1)
 		}
-		filePath := os.Args[2]
+		filePath := flag.Arg(1)
 		addVPNConfig(repo, filePath)
 	case "revalidate":
 		revalidateVPNConfigs(repo)
